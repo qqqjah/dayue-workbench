@@ -1,0 +1,2794 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="大玥工作台">
+<meta name="theme-color" content="#6b5ce7">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<title>大玥的工作台</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif; }
+  body {
+    background: #f3f1ff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #1f2330;
+  }
+
+  .phone {
+    position: relative;
+    width: 390px;
+    height: 844px;
+    background: #f7f5ff;
+    border-radius: 44px;
+    overflow: hidden;
+    box-shadow: 0 30px 80px rgba(80, 60, 200, 0.25);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 状态栏 */
+  .status-bar {
+    height: 44px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 24px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1f2330;
+    flex-shrink: 0;
+    z-index: 30;
+  }
+  .status-right { display: flex; align-items: center; gap: 6px; }
+  .battery {
+    width: 26px; height: 12px;
+    border: 1.2px solid #1f2330;
+    border-radius: 3px;
+    position: relative;
+  }
+  .battery::after {
+    content: '';
+    position: absolute;
+    right: -3px; top: 3px;
+    width: 2px; height: 4px;
+    background: #1f2330;
+    border-radius: 0 1px 1px 0;
+  }
+  .battery-fill {
+    position: absolute;
+    left: 1px; top: 1px; bottom: 1px;
+    width: 80%;
+    background: #1f2330;
+    border-radius: 1.5px;
+  }
+
+  /* 顶部标题 */
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 16px 8px;
+    flex-shrink: 0;
+    z-index: 30;
+  }
+  .top-bar .title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1f2330;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dot-rec {
+    width: 8px; height: 8px;
+    background: #ff3b30;
+    border-radius: 50%;
+  }
+
+  /* 主内容区：左侧导航 + 右侧内容 */
+  .main-area {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* 左侧导航栏 */
+  .sidebar {
+    width: 70px;
+    background: #6b5ce7;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 0;
+    gap: 4px;
+    flex-shrink: 0;
+    z-index: 20;
+  }
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 4px;
+    border-radius: 12px;
+    cursor: pointer;
+    color: rgba(255,255,255,0.7);
+    font-size: 10px;
+    width: 58px;
+    transition: all 0.2s;
+  }
+  .nav-item .nav-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    background: rgba(255,255,255,0.15);
+  }
+  .nav-item.active {
+    color: #fff;
+  }
+  .nav-item.active .nav-icon {
+    background: rgba(255,255,255,0.3);
+  }
+
+  /* 右侧内容区 */
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0 14px 20px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .content::-webkit-scrollbar { display: none; }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ========== 主页工作台 ========== */
+  .workspace-header {
+    padding: 6px 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .workspace-header .emoji { font-size: 20px; }
+  .workspace-header h2 {
+    font-size: 20px;
+    font-weight: 800;
+    color: #1f2330;
+  }
+  .date-line {
+    color: #8b8ea3;
+    font-size: 12px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .stat-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px 6px 16px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(80, 60, 200, 0.05);
+  }
+  .stat-card .num {
+    font-size: 26px;
+    font-weight: 800;
+    color: #6b5ce7;
+    line-height: 1;
+  }
+  .stat-card .label {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #8b8ea3;
+  }
+
+  .section-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1f2330;
+    margin: 8px 0 10px;
+  }
+  .section-title .pill {
+    background: #ece8ff;
+    color: #6b5ce7;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-weight: 600;
+  }
+
+  .subject-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 10px rgba(80, 60, 200, 0.05);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    cursor: pointer;
+  }
+  .subject-card .accent {
+    position: absolute;
+    left: 0; top: 10px; bottom: 10px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+  }
+  .subject-card.lang .accent { background: #6c8cff; }
+  .subject-card.math .accent { background: #34c759; }
+  .subject-card.english .accent { background: #a78bfa; }
+  .subject-card.health .accent { background: #ff9f43; }
+
+  .subject-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    background: #f5f3ff;
+    flex-shrink: 0;
+  }
+  .subject-info { flex: 1; min-width: 0; }
+  .subject-info h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1f2330;
+    margin-bottom: 2px;
+  }
+  .subject-info p {
+    font-size: 12px;
+    color: #8b8ea3;
+  }
+  .subject-card .more {
+    color: #b8bac9;
+    font-size: 16px;
+    letter-spacing: 2px;
+  }
+
+  /* ========== 打卡日历 ========== */
+  .page-title {
+    font-size: 20px;
+    font-weight: 800;
+    margin: 8px 0 2px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .page-date {
+    color: #8b8ea3;
+    font-size: 12px;
+    margin-bottom: 10px;
+  }
+
+  .calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .calendar-header .month {
+    font-size: 18px;
+    font-weight: 800;
+  }
+  .calendar-header .nav {
+    display: flex;
+    gap: 8px;
+    font-size: 18px;
+    color: #6b5ce7;
+    cursor: pointer;
+  }
+  .weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-size: 12px;
+    color: #8b8ea3;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .weekdays span:first-child, .weekdays span:last-child {
+    color: #ff6b6b;
+  }
+  .days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    gap: 4px;
+  }
+  .day {
+    width: 100%;
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    position: relative;
+    cursor: pointer;
+  }
+  .day.empty { visibility: hidden; }
+  .day.today {
+    background: #6b5ce7;
+    color: #fff;
+    border-radius: 50%;
+  }
+  .day.done {
+    background: #e8f8ed;
+    color: #34c759;
+  }
+  .day.done::after {
+    content: '🌞';
+    font-size: 9px;
+    position: absolute;
+    bottom: 1px;
+  }
+  .day.miss {
+    background: #fff0f0;
+    color: #ff6b6b;
+  }
+
+  .checkin-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin: 12px 0;
+  }
+  .checkin-item {
+    background: #fff;
+    border-radius: 12px;
+    padding: 10px 4px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(80,60,200,0.04);
+  }
+  .checkin-item .n {
+    font-size: 18px;
+    font-weight: 800;
+    color: #6b5ce7;
+  }
+  .checkin-item .l {
+    font-size: 10px;
+    color: #8b8ea3;
+    margin-top: 2px;
+  }
+
+  .today-checkin {
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px;
+    box-shadow: 0 2px 10px rgba(80,60,200,0.05);
+    margin-bottom: 10px;
+  }
+  .today-checkin .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .today-checkin h3 {
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .checkin-btn {
+    background: linear-gradient(135deg, #6c8cff, #6b5ce7);
+    color: #fff;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 16px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(91,92,240,0.3);
+  }
+  .checkin-btn:active { transform: scale(0.96); }
+  .checkin-btn.done-btn {
+    background: #e8f8ed;
+    color: #34c759;
+    box-shadow: none;
+  }
+  .today-checkin .detail {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #8b8ea3;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .today-checkin .detail span {
+    background: #f5f3ff;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+  }
+
+  /* ========== 奖励中心 ========== */
+  .reward-header {
+    background: linear-gradient(135deg, #ffd54f, #ffb300);
+    border-radius: 18px;
+    padding: 16px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 8px 0 12px;
+    color: #fff;
+  }
+  .reward-header .big-sun {
+    font-size: 40px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+  }
+  .reward-header .info h3 {
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 2px;
+  }
+  .reward-header .info p {
+    font-size: 12px;
+    opacity: 0.9;
+  }
+  .reward-header .score {
+    margin-left: auto;
+    font-size: 32px;
+    font-weight: 800;
+  }
+
+  .reward-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .reward-item {
+    background: #fff;
+    border-radius: 14px;
+    padding: 12px 6px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(80,60,200,0.04);
+  }
+  .reward-item .ri-icon {
+    font-size: 30px;
+    margin-bottom: 6px;
+  }
+  .reward-item .ri-name {
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+  .reward-item .ri-cost {
+    font-size: 11px;
+    color: #ffb300;
+    font-weight: 600;
+  }
+  .reward-item.locked {
+    opacity: 0.5;
+  }
+  .reward-item.locked .ri-icon {
+    filter: grayscale(1);
+  }
+
+  .exchange-history {
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px;
+    box-shadow: 0 2px 10px rgba(80,60,200,0.05);
+  }
+  .exchange-history h3 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  /* ========== 植物大战僵尸 ========== */
+  .pvz-rules {
+    background: linear-gradient(135deg, #81c784, #4caf50);
+    border-radius: 16px;
+    padding: 12px 14px;
+    color: #fff;
+    margin: 8px 0 12px;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .pvz-rules .rules-title {
+    font-size: 14px;
+    font-weight: 800;
+    margin-bottom: 6px;
+  }
+  .pvz-rules .rule-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin-bottom: 3px;
+  }
+
+  .pvz-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 8px 0 12px;
+  }
+  .pvz-stat {
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px 10px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(80,60,200,0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    position: relative;
+  }
+  .pvz-stat.sun { background: linear-gradient(135deg, #fff8e1, #ffecb3); }
+  .pvz-stat.zombie-stat { background: linear-gradient(135deg, #fce4ec, #f8bbd0); }
+  .pvz-stat-icon { font-size: 26px; }
+  .pvz-stat-num {
+    font-size: 28px;
+    font-weight: 800;
+    color: #1f2330;
+  }
+  .pvz-stat-label {
+    font-size: 11px;
+    color: #8b8ea3;
+  }
+
+  .garden {
+    background: linear-gradient(180deg, #a5d6a7 0%, #66bb6a 40%, #43a047 70%, #2e7d32 100%);
+    border-radius: 18px;
+    padding: 14px;
+    margin-bottom: 14px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+  .garden::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 32px, rgba(255,255,255,0.03) 32px, rgba(255,255,255,0.03) 33px
+    );
+    pointer-events: none;
+  }
+  .garden-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    margin-bottom: 10px;
+    opacity: 0.95;
+  }
+  .garden-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+  .garden-cell {
+    aspect-ratio: 1;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    background: rgba(255,255,255,0.25);
+    border: 1.5px dashed rgba(255,255,255,0.4);
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .garden-cell.planted {
+    background: rgba(255,255,255,0.9);
+    border: 2px solid rgba(255,255,255,0.6);
+    color: #2e7d32;
+  }
+  .garden-cell.empty-cell {
+    color: rgba(255,255,255,0.6);
+  }
+  .garden-cell.empty-cell:hover {
+    background: rgba(255,255,255,0.4);
+    transform: scale(1.05);
+  }
+  .garden-cell.zombie {
+    background: rgba(158,158,158,0.5);
+    border: 2px solid rgba(200,200,200,0.4);
+    color: #fff;
+  }
+  .garden-cell.zombie-close {
+    background: rgba(244,67,54,0.6);
+    border: 2px solid rgba(244,67,54,0.8);
+    animation: pulse-zombie 1s infinite;
+  }
+  @keyframes pulse-zombie {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  @keyframes sunFloat {
+    0% { opacity: 1; transform: translate(-50%, -50%) scale(0.5); }
+    30% { opacity: 1; transform: translate(-50%, -80%) scale(1.2); }
+    100% { opacity: 0; transform: translate(-50%, -120%) scale(0.8); }
+  }
+  .garden-cell.destroyed {
+    background: rgba(0,0,0,0.4);
+    border: 2px dashed rgba(255,100,100,0.6);
+    color: #ff6b6b;
+    cursor: not-allowed;
+  }
+  .garden-cell .gc-icon { font-size: 18px; margin-bottom: 1px; }
+  .garden-cell .gc-name { font-size: 8px; font-weight: 600; text-align: center; line-height: 1.1; }
+  .garden-cell .gc-plus { font-size: 20px; font-weight: 300; }
+  .garden-cell .gc-sun-cost {
+    position: absolute;
+    top: 2px; right: 4px;
+    font-size: 8px;
+    color: #ffb300;
+    font-weight: 700;
+  }
+  .garden-hint {
+    margin-top: 10px;
+    font-size: 11px;
+    opacity: 0.9;
+    text-align: center;
+  }
+  .garden-legend {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 10px;
+    font-size: 10px;
+    opacity: 0.85;
+  }
+
+  /* 植物商店弹窗 */
+  .shop-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .shop-overlay.hidden { display: none; }
+  .shop-panel {
+    background: #fff;
+    border-radius: 20px;
+    padding: 20px;
+    width: 280px;
+    max-height: 400px;
+    overflow-y: auto;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  }
+  .shop-panel h3 {
+    font-size: 16px;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+  .shop-panel .shop-balance {
+    font-size: 13px;
+    color: #ffb300;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .shop-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 12px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: all 0.15s;
+  }
+  .shop-item:hover {
+    border-color: #6b5ce7;
+    background: #f8f7ff;
+  }
+  .shop-item.cant-afford {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .shop-item .si-icon {
+    font-size: 28px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f5f3ff;
+    border-radius: 10px;
+  }
+  .shop-item .si-info { flex: 1; }
+  .shop-item .si-info .si-name {
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .shop-item .si-info .si-desc {
+    font-size: 11px;
+    color: #8b8ea3;
+  }
+  .shop-item .si-cost {
+    font-size: 13px;
+    font-weight: 800;
+    color: #ffb300;
+  }
+  .shop-close {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    background: #ece8ff;
+    border: none;
+    border-radius: 10px;
+    color: #6b5ce7;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* 今日任务状态 */
+  .task-status-section {
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 10px rgba(80,60,200,0.05);
+  }
+  .task-status-section .ts-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ts-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 13px;
+    border-bottom: 1px solid #f5f3ff;
+  }
+  .ts-row:last-child { border: none; }
+  .ts-row .ts-subject {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ts-row .ts-progress {
+    font-weight: 600;
+    font-size: 12px;
+  }
+  .ts-row .ts-progress.done { color: #34c759; }
+  .ts-row .ts-progress.pending { color: #ff9f43; }
+  .ts-zombie-warning {
+    margin-top: 10px;
+    padding: 10px;
+    background: #fff3e0;
+    border-radius: 10px;
+    font-size: 12px;
+    color: #e65100;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ts-zombie-warning.safe {
+    background: #e8f5e9;
+    color: #2e7d32;
+  }
+
+  .pvz-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .pvz-btn {
+    flex: 1;
+    background: #fff;
+    border-radius: 14px;
+    padding: 12px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(80,60,200,0.05);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    border: none;
+  }
+  .pvz-btn.danger {
+    background: #ff6b6b;
+    color: #fff;
+  }
+
+  /* ========== 教材内容 Accordion ========== */
+  .textbook-section {
+    margin-top: 18px;
+  }
+  .textbook-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .accordion {
+    background: #fff;
+    border-radius: 14px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 8px rgba(80,60,200,0.04);
+    overflow: hidden;
+  }
+  .accordion-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 14px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1f2330;
+    user-select: none;
+  }
+  .accordion-header .acc-arrow {
+    font-size: 12px;
+    margin-right: 8px;
+    transition: transform 0.2s;
+    color: #8b8ea3;
+  }
+  .accordion.open .accordion-header .acc-arrow {
+    transform: rotate(90deg);
+  }
+  .accordion-header .acc-num {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+  .accordion.chinese .acc-num { background: #e8eeff; color: #6c8cff; }
+  .accordion.math-acc .acc-num { background: #e8f8ed; color: #34c759; }
+  .accordion.english-acc .acc-num { background: #f5f0ff; color: #a78bfa; }
+  .accordion-body {
+    display: none;
+    padding: 0 14px 14px;
+  }
+  .accordion.open .accordion-body {
+    display: block;
+  }
+  .acc-tag {
+    display: inline-block;
+    background: #f5f3ff;
+    color: #6b5ce7;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    margin: 3px 4px 3px 0;
+    font-weight: 500;
+  }
+  .acc-tag.blue { background: #e8eeff; color: #6c8cff; }
+  .acc-tag.green { background: #e8f8ed; color: #34c759; }
+  .acc-tag.purple { background: #f5f0ff; color: #a78bfa; }
+  .acc-tag.orange { background: #fff4e6; color: #ff9f43; }
+  .acc-subtitle {
+    font-size: 12px;
+    font-weight: 700;
+    color: #8b8ea3;
+    margin: 8px 0 4px;
+  }
+  .acc-letters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .acc-letter {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: #f5f3ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: #6b5ce7;
+  }
+  .acc-sentence {
+    background: #faf9ff;
+    border-radius: 8px;
+    padding: 6px 10px;
+    margin: 3px 0;
+    font-size: 12px;
+    color: #5a5d72;
+    border-left: 3px solid #6b5ce7;
+  }
+
+  /* ========== 错题本 ========== */
+  .wrong-header {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    border-radius: 18px;
+    padding: 16px 14px;
+    color: #fff;
+    margin: 8px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .wrong-header .big-icon {
+    font-size: 40px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+  }
+  .wrong-header .info h3 {
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 2px;
+  }
+  .wrong-header .info p {
+    font-size: 12px;
+    opacity: 0.9;
+  }
+
+  .wrong-filter {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .wrong-filter .fbtn {
+    padding: 5px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    border: none;
+    background: #ece8ff;
+    color: #6b5ce7;
+    cursor: pointer;
+  }
+  .wrong-filter .fbtn.active {
+    background: #6b5ce7;
+    color: #fff;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 50px 0;
+    color: #8b8ea3;
+  }
+  .empty-state .emoji { font-size: 50px; margin-bottom: 10px; }
+  .empty-state p { font-size: 14px; }
+
+  /* ========== 任务视图 ========== */
+  .back-row {
+    display: flex;
+    align-items: center;
+    color: #6b5ce7;
+    font-size: 13px;
+    gap: 2px;
+    margin: 4px 0 8px;
+    cursor: pointer;
+  }
+
+  .subject-hero {
+    background: #fff;
+    border-radius: 18px;
+    padding: 16px 14px 14px;
+    box-shadow: 0 2px 10px rgba(80, 60, 200, 0.05);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .subject-hero .icon-big {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+  }
+  .subject-hero .meta { flex: 1; }
+  .subject-hero h3 {
+    font-size: 16px;
+    font-weight: 800;
+    margin-bottom: 2px;
+  }
+  .subject-hero .sub {
+    color: #8b8ea3;
+    font-size: 11px;
+    margin-bottom: 6px;
+  }
+  .progress {
+    height: 4px;
+    background: #ece8ff;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress .bar {
+    height: 100%;
+    background: linear-gradient(90deg, #6c8cff, #6b5ce7);
+    border-radius: 2px;
+  }
+
+  .tasks-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 15px;
+    font-weight: 700;
+    margin: 4px 0 10px;
+  }
+  .tasks-head .pill {
+    background: #ece8ff;
+    color: #6b5ce7;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-weight: 600;
+  }
+
+  .task {
+    background: #fff;
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 2px 8px rgba(80, 60, 200, 0.04);
+  }
+  .task .checkbox {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    border: 2px solid #d0d2dd;
+    flex-shrink: 0;
+    position: relative;
+    cursor: pointer;
+  }
+  .task.done .checkbox {
+    background: #34c759;
+    border-color: #34c759;
+  }
+  .task.done .checkbox::after {
+    content: '✓';
+    color: #fff;
+    font-size: 14px;
+    font-weight: 800;
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .task .body { flex: 1; min-width: 0; }
+  .task .body h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 2px;
+    color: #1f2330;
+  }
+  .task.done .body h4 {
+    text-decoration: line-through;
+    color: #8b8ea3;
+  }
+  .task .body .meta {
+    font-size: 11px;
+    color: #8b8ea3;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .flame { color: #ff9f43; font-size: 12px; }
+  .task .close {
+    color: #c5c7d3;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .fab {
+    position: absolute;
+    right: 14px;
+    bottom: 20px;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6c8cff, #6b5ce7);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 300;
+    box-shadow: 0 6px 16px rgba(91, 92, 240, 0.35);
+    z-index: 20;
+    cursor: pointer;
+  }
+  .fab-big {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 100px;
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6c8cff, #6b5ce7);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: 300;
+    box-shadow: 0 8px 20px rgba(91, 92, 240, 0.4);
+    z-index: 20;
+  }
+</style>
+</head>
+<body>
+  <div class="phone">
+    <!-- 状态栏 -->
+    <div class="status-bar">
+      <span id="statusTime">16:10</span>
+      <div class="status-right">
+        <span>5G</span>
+        <span style="font-size:13px;">●●●●</span>
+        <span style="font-size:13px;">68%</span>
+        <span class="battery"><span class="battery-fill"></span></span>
+      </div>
+    </div>
+
+    <!-- 顶部标题 -->
+    <div class="top-bar">
+      <div></div>
+      <div class="title">
+        <span class="dot-rec"></span>
+        <span>大玥的学习计划</span>
+      </div>
+      <div></div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="main-area">
+      <!-- 左侧导航栏 -->
+      <div class="sidebar">
+        <div class="nav-item active" data-nav="home">
+          <div class="nav-icon">📚</div>
+          <span>工作台</span>
+        </div>
+        <div class="nav-item" data-nav="wrong">
+          <div class="nav-icon">📝</div>
+          <span>错题本</span>
+        </div>
+        <div class="nav-item" data-nav="pvz">
+          <div class="nav-icon">🌻</div>
+          <span>植物大战</span>
+        </div>
+        <div class="nav-item" data-nav="reward">
+          <div class="nav-icon">🎁</div>
+          <span>奖励中心</span>
+        </div>
+        <div class="nav-item" data-nav="calendar">
+          <div class="nav-icon">📊</div>
+          <span>打卡统计</span>
+        </div>
+        <div class="nav-item" data-nav="health">
+          <div class="nav-icon">🏃</div>
+          <span>健身饮食</span>
+        </div>
+      </div>
+
+      <!-- 右侧内容区 -->
+      <div class="content" id="scrollArea">
+
+        <!-- ====== 视图1：主页工作台 ====== -->
+        <div class="view active" id="view-home">
+          <div class="workspace-header">
+            <span class="emoji">🐾🐾</span>
+            <h2>大玥的工作台</h2>
+          </div>
+          <div class="date-line">7月 📅 星期日</div>
+
+          <div class="stats">
+            <div class="stat-card">
+              <div class="num">4</div>
+              <div class="label">学习项</div>
+            </div>
+            <div class="stat-card">
+              <div class="num">0</div>
+              <div class="label">今日完成</div>
+            </div>
+            <div class="stat-card">
+              <div class="num">0%</div>
+              <div class="label">完成率</div>
+            </div>
+          </div>
+
+          <div class="section-title">
+            <span>学习内容</span>
+            <span class="pill">4 项</span>
+          </div>
+
+          <div class="subject-card lang" data-target="chinese">
+            <span class="accent"></span>
+            <div class="subject-icon">📚</div>
+            <div class="subject-info">
+              <h3>语文</h3>
+              <p>每天30分钟</p>
+            </div>
+            <span class="more">···</span>
+          </div>
+
+          <div class="subject-card math" data-target="math">
+            <span class="accent"></span>
+            <div class="subject-icon">🧮</div>
+            <div class="subject-info">
+              <h3>数学</h3>
+              <p>每天20分钟</p>
+            </div>
+            <span class="more">···</span>
+          </div>
+
+          <div class="subject-card english" data-target="english">
+            <span class="accent"></span>
+            <div class="subject-icon" style="background:#f5f0ff;">🔤</div>
+            <div class="subject-info">
+              <h3>英语</h3>
+              <p>周期 1 项 · 大量输入</p>
+            </div>
+            <span class="more">···</span>
+          </div>
+
+          <div class="subject-card health" data-target="health">
+            <span class="accent"></span>
+            <div class="subject-icon" style="background:#fff4e6;">🏃</div>
+            <div class="subject-info">
+              <h3>健身饮食</h3>
+              <p>运动 + 饮食健康</p>
+            </div>
+            <span class="more">···</span>
+          </div>
+        </div>
+
+        <!-- ====== 视图2：打卡日历 ====== -->
+        <div class="view" id="view-calendar">
+          <div class="page-title">📅 打卡日历</div>
+          <div class="page-date" id="calDate">2026年7月</div>
+
+          <div class="calendar-header">
+            <span class="month" id="calMonth">2026年 7月</span>
+            <div class="nav">
+              <span id="calPrev">◀</span>
+              <span id="calNext">▶</span>
+            </div>
+          </div>
+
+          <div class="weekdays">
+            <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+          </div>
+          <div class="days" id="calDays"></div>
+
+          <div class="checkin-stats">
+            <div class="checkin-item">
+              <div class="n">0</div>
+              <div class="l">本月打卡</div>
+            </div>
+            <div class="checkin-item">
+              <div class="n">0</div>
+              <div class="l">连续天数</div>
+            </div>
+            <div class="checkin-item">
+              <div class="n">0</div>
+              <div class="l">总打卡</div>
+            </div>
+            <div class="checkin-item">
+              <div class="n">🌞0</div>
+              <div class="l">获得太阳</div>
+            </div>
+          </div>
+
+          <div class="today-checkin">
+            <div class="row">
+              <h3>今日打卡</h3>
+              <button class="checkin-btn" id="checkinBtn">📝 打卡签到</button>
+            </div>
+            <div class="detail">
+              <span>语文 0/4</span>
+              <span>数学 0/3</span>
+              <span>英语 0/2</span>
+              <span>健身 0/1</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====== 视图3：奖励中心 ====== -->
+        <div class="view" id="view-reward">
+          <div class="page-title">🎁 奖励中心</div>
+          <div class="page-date">用太阳兑换奖品</div>
+
+          <div class="reward-header">
+            <span class="big-sun">🌞</span>
+            <div class="info">
+              <h3>我的太阳</h3>
+              <p>坚持打卡赚太阳</p>
+            </div>
+            <span class="score">0</span>
+          </div>
+
+          <div class="section-title">
+            <span>兑换奖品</span>
+            <span class="pill">🌞 太阳可兑换</span>
+          </div>
+
+          <div class="reward-grid">
+            <div class="reward-item locked">
+              <div class="ri-icon">📺</div>
+              <div class="ri-name">看动画 20分钟</div>
+              <div class="ri-cost">☀️ 30</div>
+            </div>
+            <div class="reward-item locked">
+              <div class="ri-icon">🍦</div>
+              <div class="ri-name">冰淇淋一个</div>
+              <div class="ri-cost">☀️ 25</div>
+            </div>
+            <div class="reward-item locked">
+              <div class="ri-icon">🎮</div>
+              <div class="ri-name">玩游戏 15分钟</div>
+              <div class="ri-cost">☀️ 30</div>
+            </div>
+            <div class="reward-item locked">
+              <div class="ri-icon">🧸</div>
+              <div class="ri-name">小玩具（10元内）</div>
+              <div class="ri-cost">☀️ 10</div>
+            </div>
+            <div class="reward-item locked">
+              <div class="ri-icon">🎬</div>
+              <div class="ri-name">看电影</div>
+              <div class="ri-cost">☀️ 15</div>
+            </div>
+            <div class="reward-item locked">
+              <div class="ri-icon">🎢</div>
+              <div class="ri-name">游乐园</div>
+              <div class="ri-cost">☀️ 50</div>
+            </div>
+          </div>
+
+          <div class="exchange-history">
+            <h3>兑换记录</h3>
+            <div class="empty-state" style="padding:20px 0;">
+              <p style="font-size:12px;">还没有兑换记录</p>
+              <p style="font-size:11px;margin-top:4px;">坚持打卡赚太阳来兑换吧！</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====== 视图4：植物大战僵尸 ====== -->
+        <div class="view" id="view-pvz">
+          <div class="page-title">🌱 植物大战僵尸</div>
+          <div class="page-date" id="pvzDate">7月27日 星期日</div>
+
+          <!-- 规则说明 -->
+          <div class="pvz-rules">
+            <div class="rules-title">🎮 核心玩法</div>
+            <div class="rule-item">☀️ 完成任务 → 赚阳光 → 种植物</div>
+            <div class="rule-item">🧟 未完成任务 → 僵尸入侵破坏花圃</div>
+            <div class="rule-item">🎁 阳光可在奖励商城兑换实物奖励</div>
+          </div>
+
+          <!-- 统计卡 -->
+          <div class="pvz-stats">
+            <div class="pvz-stat sun">
+              <div class="pvz-stat-icon">☀️</div>
+              <div class="pvz-stat-num" id="pvzSunCount">0</div>
+              <div class="pvz-stat-label">阳光余额</div>
+            </div>
+            <div class="pvz-stat zombie-stat">
+              <div class="pvz-stat-icon">🧟</div>
+              <div class="pvz-stat-num" id="pvzZombieDist">0</div>
+              <div class="pvz-stat-label" id="pvzZombieLabel">僵尸距离</div>
+            </div>
+          </div>
+
+          <!-- 花园基地 -->
+          <div class="garden" id="garden">
+            <div class="garden-header">
+              <span>🏠 大玥的花园基地</span>
+              <span id="gardenStatus">🌿 一切安全</span>
+            </div>
+            <div class="garden-grid" id="gardenGrid">
+              <!-- JS动态渲染 -->
+            </div>
+            <div class="garden-hint">
+              👆 点击空格子种植物，点击已种植物移除
+            </div>
+            <div class="garden-legend">
+              <span>🌻=5☀️</span>
+              <span>🟢=10☀️</span>
+              <span>🌶️=15☀️</span>
+              <span>🍄=20☀️</span>
+              <span>🥶=30☀️</span>
+            </div>
+          </div>
+
+          <!-- 今日任务状态 -->
+          <div class="task-status-section">
+            <div class="ts-title">📋 今日任务状态</div>
+            <div class="ts-row">
+              <span class="ts-subject">📖 语文</span>
+              <span class="ts-progress pending" id="tsChinese">0/4 未完成</span>
+            </div>
+            <div class="ts-row">
+              <span class="ts-subject">🧮 数学</span>
+              <span class="ts-progress pending" id="tsMath">0/3 未完成</span>
+            </div>
+            <div class="ts-row">
+              <span class="ts-subject">🔤 英语</span>
+              <span class="ts-progress pending" id="tsEnglish">0/2 未完成</span>
+            </div>
+            <div class="ts-row">
+              <span class="ts-subject">🏃 健身饮食</span>
+              <span class="ts-progress pending" id="tsHealth">0/1 未完成</span>
+            </div>
+            <div class="ts-zombie-warning safe" id="tsWarning">
+              ✅ 全部任务已完成，花园安全！
+            </div>
+          </div>
+
+          <!-- 底部按钮 -->
+          <div class="pvz-actions">
+            <button class="pvz-btn" onclick="window.showView('view-reward');window.setNavActive('reward');">
+              🎁 奖励商城
+            </button>
+            <button class="pvz-btn danger" onclick="resetGarden()">
+              🔄 重置花园
+            </button>
+          </div>
+        </div>
+
+        <!-- 植物商店弹窗（全局） -->
+        <div class="shop-overlay hidden" id="shopOverlay">
+          <div class="shop-panel">
+            <h3>🌱 选择植物</h3>
+            <div class="shop-balance">☀️ 余额：<span id="shopBalance">0</span></div>
+            <div class="shop-item" data-plant="sunflower" data-cost="5">
+              <div class="si-icon">🌻</div>
+              <div class="si-info"><div class="si-name">向日葵</div><div class="si-desc">基础植物，产出阳光</div></div>
+              <span class="si-cost">5 ☀️</span>
+            </div>
+            <div class="shop-item" data-plant="peashooter" data-cost="10">
+              <div class="si-icon">🟢</div>
+              <div class="si-info"><div class="si-name">豌豆射手</div><div class="si-desc">远程攻击僵尸</div></div>
+              <span class="si-cost">10 ☀️</span>
+            </div>
+            <div class="shop-item" data-plant="pepper" data-cost="15">
+              <div class="si-icon">🌶️</div>
+              <div class="si-info"><div class="si-name">火爆辣椒</div><div class="si-desc">范围伤害，消灭一行僵尸</div></div>
+              <span class="si-cost">15 ☀️</span>
+            </div>
+            <div class="shop-item" data-plant="mushroom" data-cost="20">
+              <div class="si-icon">🍄</div>
+              <div class="si-info"><div class="si-name">魅惑菇</div><div class="si-desc">迷惑僵尸，使其后退</div></div>
+              <span class="si-cost">20 ☀️</span>
+            </div>
+            <div class="shop-item" data-plant="ice" data-cost="30">
+              <div class="si-icon">🥶</div>
+              <div class="si-info"><div class="si-name">寒冰射手</div><div class="si-desc">减速僵尸，冰冻效果</div></div>
+              <span class="si-cost">30 ☀️</span>
+            </div>
+            <button class="shop-close" onclick="document.getElementById('shopOverlay').classList.add('hidden')">取消</button>
+          </div>
+        </div>
+
+        <!-- ====== 视图5：错题本 ====== -->
+        <div class="view" id="view-wrong">
+          <div class="page-title">📕 错题本</div>
+          <div class="page-date">记录和复习错题</div>
+
+          <div class="wrong-header">
+            <span class="big-icon">📕</span>
+            <div class="info">
+              <h3>错题本</h3>
+              <p>共 0 道错题</p>
+            </div>
+          </div>
+
+          <div class="wrong-filter">
+            <button class="fbtn active">全部</button>
+            <button class="fbtn">语文</button>
+            <button class="fbtn">数学</button>
+            <button class="fbtn">英语</button>
+          </div>
+
+          <div class="empty-state">
+            <div class="emoji">✨</div>
+            <p>还没有错题</p>
+            <p style="font-size:12px;margin-top:4px;">做题时自动收集错题</p>
+          </div>
+        </div>
+
+        <!-- ====== 视图6：语文每日任务 ====== -->
+        <div class="view" id="view-chinese">
+          <div class="back-row" data-back>‹ 返回工作台</div>
+          <div class="subject-hero">
+            <div class="icon-big" style="background:#e8eeff;">📖</div>
+            <div class="meta">
+              <h3>语文</h3>
+              <div class="sub">每日30分钟 · 提升语感 · 每日任务 0/4</div>
+              <div class="progress"><div class="bar" style="width:0%;"></div></div>
+            </div>
+          </div>
+
+          <div class="tasks-head">
+            <span>每日任务</span>
+            <span class="pill">0/4</span>
+          </div>
+
+          <div class="task">
+            <div class="checkbox"></div>
+            <div class="body">
+              <h4>新古诗5遍，复习一篇</h4>
+              <div class="meta"><span class="flame">🔥</span><span>连续 0 天</span><span style="color:#ffb300;font-weight:700;">☀️ +30</span></div>
+            </div>
+            <span class="close">×</span>
+          </div>
+
+          <div class="task">
+            <div class="checkbox"></div>
+            <div class="body">
+              <h4>四五快读</h4>
+              <div class="meta"><span class="flame">🔥</span><span>连续 0 天</span><span style="color:#ffb300;font-weight:700;">☀️ +25</span></div>
+            </div>
+            <span class="close">×</span>
+          </div>
+
+          <div class="task">
+            <div class="checkbox"></div>
+            <div class="body">
+              <h4>控笔训练 + 写字</h4>
+              <div class="meta"><span class="flame">🔥</span><span>连续 0 天</span><span style="color:#ffb300;font-weight:700;">☀️ +25</span></div>
+            </div>
+            <span class="close">×</span>
+          </div>
+
+          <div class="task">
+            <div class="checkbox"></div>
+            <div class="body">
+              <h4>拼音拼读及练习题</h4>
+              <div class="meta"><span class="flame">🔥</span><span>连续 0 天</span><span style="color:#ffb300;font-weight:700;">☀️ +30</span></div>
+            </div>
+            <span class="close">×</span>
+          </div>
+
+          <!-- 学习内容 -->
+          <div class="textbook-section">
+            <!-- 模块A：小学生必背古诗词 -->
+            <div class="textbook-title">📜 小学生必背古诗词（75首）</div>
+
+            <div class="accordion chinese">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">1</span>
+                <span>一年级上册 · 6首</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag blue">咏鹅</span>
+                <span class="acc-tag blue">春晓</span>
+                <span class="acc-tag blue">静夜思</span>
+                <span class="acc-tag blue">悯农（锄禾）</span>
+                <span class="acc-tag blue">古朗月行</span>
+                <span class="acc-tag blue">风</span>
+              </div>
+            </div>
+
+            <div class="accordion chinese">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">2</span>
+                <span>一年级下册 · 6首</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag blue">赠汪伦</span>
+                <span class="acc-tag blue">寻隐者不遇</span>
+                <span class="acc-tag blue">画鸡</span>
+                <span class="acc-tag blue">池上</span>
+                <span class="acc-tag blue">小池</span>
+                <span class="acc-tag blue">画</span>
+              </div>
+            </div>
+
+            <div class="accordion chinese">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">3</span>
+                <span>二年级上册 · 7首</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag blue">登鹳雀楼</span>
+                <span class="acc-tag blue">望庐山瀑布</span>
+                <span class="acc-tag blue">夜宿山寺</span>
+                <span class="acc-tag blue">敕勒歌</span>
+                <span class="acc-tag blue">村居</span>
+                <span class="acc-tag blue">咏柳</span>
+                <span class="acc-tag blue">赋得古原草送别</span>
+              </div>
+            </div>
+
+            <div class="accordion chinese">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">4</span>
+                <span>二年级下册 · 4首</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag blue">悯农（春种）</span>
+                <span class="acc-tag blue">绝句（两个黄鹂）</span>
+                <span class="acc-tag blue">晓出净慈寺送林子方</span>
+                <span class="acc-tag blue">舟夜书所见</span>
+              </div>
+            </div>
+
+            <div class="accordion chinese">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">5</span>
+                <span>三年级上册 · 8首</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag blue">所见</span>
+                <span class="acc-tag blue">山行</span>
+                <span class="acc-tag blue">赠刘景文</span>
+                <span class="acc-tag blue">望天门山</span>
+                <span class="acc-tag blue">饮湖上初晴后雨</span>
+                <span class="acc-tag blue">望洞庭</span>
+                <span class="acc-tag blue">早发白帝城</span>
+                <span class="acc-tag blue">采莲曲</span>
+              </div>
+            </div>
+
+            <div class="accordion chinese">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">6</span>
+                <span>三年级下册 · 8首</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag blue">绝句（迟日）</span>
+                <span class="acc-tag blue">惠崇春江晚景</span>
+                <span class="acc-tag blue">三衢道中</span>
+                <span class="acc-tag blue">忆江南</span>
+                <span class="acc-tag blue">元日</span>
+                <span class="acc-tag blue">清明</span>
+                <span class="acc-tag blue">九月九日忆山东兄弟</span>
+                <span class="acc-tag blue">大林寺桃花</span>
+              </div>
+            </div>
+
+            <div class="accordion chinese">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">7</span>
+                <span>四年级上册 · 7首</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag blue">鹿柴</span>
+                <span class="acc-tag blue">暮江吟</span>
+                <span class="acc-tag blue">题西林壁</span>
+                <span class="acc-tag blue">雪梅</span>
+                <span class="acc-tag blue">出塞</span>
+                <span class="acc-tag blue">凉州词</span>
+                <span class="acc-tag blue">夏日绝句</span>
+              </div>
+            </div>
+
+            <div class="accordion chinese">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">8</span>
+                <span>四年级下册 · 6首</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag blue">四时田园杂兴</span>
+                <span class="acc-tag blue">宿新市徐公店</span>
+                <span class="acc-tag blue">清平乐·村居</span>
+                <span class="acc-tag blue">芙蓉楼送辛渐</span>
+                <span class="acc-tag blue">塞下曲</span>
+                <span class="acc-tag blue">墨梅</span>
+              </div>
+            </div>
+
+            <div class="accordion chinese">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">9</span>
+                <span>五年级上册 · 8首</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag blue">示儿</span>
+                <span class="acc-tag blue">题临安邸</span>
+                <span class="acc-tag blue">己亥杂诗</span>
+                <span class="acc-tag blue">山居秋暝</span>
+                <span class="acc-tag blue">枫桥夜泊</span>
+                <span class="acc-tag blue">长相思</span>
+                <span class="acc-tag blue">渔歌子</span>
+                <span class="acc-tag blue">观书有感</span>
+              </div>
+            </div>
+
+            <div class="accordion chinese">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">10</span>
+                <span>五年级下册 · 6首</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag blue">四时田园杂兴（昼出）</span>
+                <span class="acc-tag blue">稚子弄冰</span>
+                <span class="acc-tag blue">村晚</span>
+                <span class="acc-tag blue">从军行</span>
+                <span class="acc-tag blue">闻官军收河南河北</span>
+                <span class="acc-tag blue">凉州词（黄河远上）</span>
+              </div>
+            </div>
+
+            <div class="accordion chinese">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">11</span>
+                <span>六年级上册 · 6首</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag blue">浪淘沙</span>
+                <span class="acc-tag blue">江南春</span>
+                <span class="acc-tag blue">书湖阴先生壁</span>
+                <span class="acc-tag blue">过故人庄</span>
+                <span class="acc-tag blue">春日</span>
+                <span class="acc-tag blue">回乡偶书</span>
+              </div>
+            </div>
+
+            <div class="accordion chinese">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">12</span>
+                <span>六年级下册 · 7首</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag blue">寒食</span>
+                <span class="acc-tag blue">迢迢牵牛星</span>
+                <span class="acc-tag blue">十五夜望月</span>
+                <span class="acc-tag blue">长歌行</span>
+                <span class="acc-tag blue">马诗</span>
+                <span class="acc-tag blue">石灰吟</span>
+                <span class="acc-tag blue">竹石</span>
+              </div>
+            </div>
+
+            <!-- 模块B：四五快读全八册 -->
+            <div class="textbook-title" style="margin-top:14px;">📚 四五快读（全八册）</div>
+
+            <div class="accordion chinese">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">一</span>
+                <span>第一册 · 1~10课</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag blue">导读 + 识字方法介绍</span>
+                <span class="acc-tag blue">88个汉字</span>
+                <span class="acc-tag blue">166个词语</span>
+                <span class="acc-tag blue">22条短句</span>
+                <span class="acc-tag blue">10条长句</span>
+              </div>
+            </div>
+
+            <div class="accordion chinese">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">二</span>
+                <span>第二册 · 11~20课</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag blue">88个汉字</span>
+                <span class="acc-tag blue">200个词语</span>
+                <span class="acc-tag blue">12条短句</span>
+                <span class="acc-tag blue">7条长句</span>
+                <span class="acc-tag blue">25篇短文</span>
+              </div>
+            </div>
+
+            <div class="accordion chinese">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">三</span>
+                <span>第三册 · 21~30课</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag blue">88个汉字</span>
+                <span class="acc-tag blue">200个词语</span>
+                <span class="acc-tag blue">更多长句和短文</span>
+              </div>
+            </div>
+
+            <div class="accordion chinese">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">四</span>
+                <span>第四册 · 31~40课</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag blue">88个汉字</span>
+                <span class="acc-tag blue">更多词语和故事</span>
+              </div>
+            </div>
+
+            <div class="accordion chinese">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">五</span>
+                <span>第五册 · 41~50课</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag blue">88个汉字</span>
+                <span class="acc-tag blue">阅读难度提升</span>
+              </div>
+            </div>
+
+            <div class="accordion chinese">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">六</span>
+                <span>第六册 · 51~60课</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag blue">88个汉字</span>
+                <span class="acc-tag blue">短文阅读</span>
+              </div>
+            </div>
+
+            <div class="accordion chinese">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">七</span>
+                <span>第七册 · 61~70课</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag blue">总复习 + 扩展</span>
+              </div>
+            </div>
+
+            <div class="accordion chinese">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">八</span>
+                <span>第八册 · 故事集</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag blue">综合阅读</span>
+                <span class="acc-tag blue">故事集</span>
+              </div>
+            </div>
+
+            <!-- 模块C：汉语拼音 -->
+            <div class="textbook-title" style="margin-top:14px;">🔤 汉语拼音系统学习</div>
+
+            <div class="accordion chinese">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">拼</span>
+                <span>拼音全表</span>
+              </div>
+              <div class="accordion-body">
+                <div class="pinyin-group"><strong>单韵母：</strong><span class="acc-tag blue">a</span><span class="acc-tag blue">o</span><span class="acc-tag blue">e</span><span class="acc-tag blue">i</span><span class="acc-tag blue">u</span><span class="acc-tag blue">ü</span></div>
+                <div class="pinyin-group"><strong>声母：</strong><span class="acc-tag blue">b</span><span class="acc-tag blue">p</span><span class="acc-tag blue">m</span><span class="acc-tag blue">f</span><span class="acc-tag blue">d</span><span class="acc-tag blue">t</span><span class="acc-tag blue">n</span><span class="acc-tag blue">l</span><span class="acc-tag blue">g</span><span class="acc-tag blue">k</span><span class="acc-tag blue">h</span><span class="acc-tag blue">j</span><span class="acc-tag blue">q</span><span class="acc-tag blue">x</span><span class="acc-tag blue">zh</span><span class="acc-tag blue">ch</span><span class="acc-tag blue">sh</span><span class="acc-tag blue">r</span><span class="acc-tag blue">z</span><span class="acc-tag blue">c</span><span class="acc-tag blue">s</span><span class="acc-tag blue">y</span><span class="acc-tag blue">w</span></div>
+                <div class="pinyin-group"><strong>复韵母：</strong><span class="acc-tag blue">ai</span><span class="acc-tag blue">ei</span><span class="acc-tag blue">ui</span><span class="acc-tag blue">ao</span><span class="acc-tag blue">ou</span><span class="acc-tag blue">iu</span><span class="acc-tag blue">ie</span><span class="acc-tag blue">üe</span><span class="acc-tag blue">er</span></div>
+                <div class="pinyin-group"><strong>前鼻韵母：</strong><span class="acc-tag blue">an</span><span class="acc-tag blue">en</span><span class="acc-tag blue">in</span><span class="acc-tag blue">un</span><span class="acc-tag blue">ün</span></div>
+                <div class="pinyin-group"><strong>后鼻韵母：</strong><span class="acc-tag blue">ang</span><span class="acc-tag blue">eng</span><span class="acc-tag blue">ing</span><span class="acc-tag blue">ong</span></div>
+                <div class="pinyin-group"><strong>整体认读音节：</strong><span class="acc-tag blue">zhi</span><span class="acc-tag blue">chi</span><span class="acc-tag blue">shi</span><span class="acc-tag blue">ri</span><span class="acc-tag blue">zi</span><span class="acc-tag blue">ci</span><span class="acc-tag blue">si</span><span class="acc-tag blue">yi</span><span class="acc-tag blue">wu</span><span class="acc-tag blue">yu</span><span class="acc-tag blue">ye</span><span class="acc-tag blue">yue</span><span class="acc-tag blue">yuan</span><span class="acc-tag blue">yin</span><span class="acc-tag blue">yun</span><span class="acc-tag blue">ying</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="fab-big">+</div>
+          <div style="height: 60px;"></div>
+        </div>
+
+        <!-- ====== 视图7：数学每日任务 ====== -->
+        <div class="view" id="view-math">
+          <div class="back-row" data-back>‹ 返回工作台</div>
+          <div class="subject-hero">
+            <div class="icon-big" style="background:#e8f8ed;">🧮</div>
+            <div class="meta">
+              <h3>数学</h3>
+              <div class="sub">五分钟计算题 · 每日任务 0/3</div>
+              <div class="progress"><div class="bar" style="width:0%;"></div></div>
+            </div>
+          </div>
+
+          <div class="tasks-head">
+            <span>每日任务</span>
+            <span class="pill">0/3</span>
+          </div>
+
+          <div class="task">
+            <div class="checkbox"></div>
+            <div class="body">
+              <h4>5 分钟计时不计量（20 以内）</h4>
+              <div class="meta"><span class="flame">🔥</span><span>连续 0 天</span><span style="color:#ffb300;font-weight:700;">☀️ +30</span></div>
+            </div>
+            <span class="close">×</span>
+          </div>
+
+          <div class="task">
+            <div class="checkbox"></div>
+            <div class="body">
+              <h4>数感星球</h4>
+              <div class="meta"><span class="flame">🔥</span><span>连续 0 天</span><span style="color:#ffb300;font-weight:700;">☀️ +25</span></div>
+            </div>
+            <span class="close">×</span>
+          </div>
+
+          <div class="task">
+            <div class="checkbox"></div>
+            <div class="body">
+              <h4>思维练习题</h4>
+              <div class="meta"><span class="flame">🔥</span><span>连续 0 天</span><span style="color:#ffb300;font-weight:700;">☀️ +25</span></div>
+            </div>
+            <span class="close">×</span>
+          </div>
+
+          <div class="fab-big">+</div>
+          <div style="height: 60px;"></div>
+        </div>
+
+        <!-- ====== 视图8：英语每日任务 ====== -->
+        <div class="view" id="view-english">
+          <div class="back-row" data-back>‹ 返回工作台</div>
+          <div class="subject-hero">
+            <div class="icon-big" style="background:#f5f0ff;">🔤</div>
+            <div class="meta">
+              <h3>英语</h3>
+              <div class="sub">周期 1 项 · 大量输入 · 每日任务 0/2</div>
+              <div class="progress"><div class="bar" style="width:0%;"></div></div>
+            </div>
+          </div>
+
+          <div class="tasks-head">
+            <span>每日任务</span>
+            <span class="pill">0/2</span>
+          </div>
+
+          <div class="task">
+            <div class="checkbox"></div>
+            <div class="body">
+              <h4>Wow English</h4>
+              <div class="meta"><span class="flame">🔥</span><span>连续 0 天</span><span style="color:#ffb300;font-weight:700;">☀️ +30</span></div>
+            </div>
+            <span class="close">×</span>
+          </div>
+
+          <div class="task">
+            <div class="checkbox"></div>
+            <div class="body">
+              <h4>RAZ 分级每天 2 本</h4>
+              <div class="meta"><span class="flame">🔥</span><span>连续 0 天</span><span style="color:#ffb300;font-weight:700;">☀️ +35</span></div>
+            </div>
+            <span class="close">×</span>
+          </div>
+
+          <!-- 学习内容 -->
+          <div class="textbook-section">
+            <!-- 模块A：Wow English -->
+            <div class="textbook-title">🎬 Wow English（8个级别）</div>
+
+            <div class="accordion english-acc">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">1</span>
+                <span>Yellow 黄色 · 第1级</span>
+              </div>
+              <div class="accordion-body">
+                <div class="pinyin-group"><strong>基础词汇与简单对话：</strong></div>
+                <span class="acc-tag purple">Hello 你好</span>
+                <span class="acc-tag purple">Colors 颜色</span>
+                <span class="acc-tag purple">Animals 动物</span>
+                <span class="acc-tag purple">Body 身体</span>
+                <span class="acc-tag purple">Food 食物</span>
+                <span class="acc-tag purple">Family 家庭</span>
+                <span class="acc-tag purple">Toys 玩具</span>
+                <span class="acc-tag purple">Actions 动作</span>
+                <span class="acc-tag purple">Numbers 数字</span>
+              </div>
+            </div>
+
+            <div class="accordion english-acc">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">2</span>
+                <span>Blue 蓝色 · 第2级</span>
+              </div>
+              <div class="accordion-body">
+                <div class="pinyin-group"><strong>日常场景：</strong></div>
+                <span class="acc-tag purple">Weather 天气</span>
+                <span class="acc-tag purple">Clothes 衣服</span>
+                <span class="acc-tag purple">House 房屋</span>
+                <span class="acc-tag purple">School 学校</span>
+                <span class="acc-tag purple">Playground 游乐场</span>
+                <span class="acc-tag purple">Feelings 感受</span>
+                <span class="acc-tag purple">Transportation 交通</span>
+                <span class="acc-tag purple">Shapes 形状</span>
+              </div>
+            </div>
+
+            <div class="accordion english-acc">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">3</span>
+                <span>Red 红色 · 第3级</span>
+              </div>
+              <div class="accordion-body">
+                <div class="pinyin-group"><strong>扩展词汇：</strong></div>
+                <span class="acc-tag purple">Nature 自然</span>
+                <span class="acc-tag purple">Jobs 职业</span>
+                <span class="acc-tag purple">Sports 运动</span>
+                <span class="acc-tag purple">Music 音乐</span>
+                <span class="acc-tag purple">Holidays 节日</span>
+                <span class="acc-tag purple">Time 时间</span>
+                <span class="acc-tag purple">Opposites 反义词</span>
+                <span class="acc-tag purple">Prepositions 方位词</span>
+              </div>
+            </div>
+
+            <div class="accordion english-acc">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">4</span>
+                <span>Green 绿色 · 第4级</span>
+              </div>
+              <div class="accordion-body">
+                <div class="pinyin-group"><strong>句子表达：</strong></div>
+                <span class="acc-tag purple">Daily Routines 日常生活</span>
+                <span class="acc-tag purple">Describing People 描述人物</span>
+                <span class="acc-tag purple">At the Store 在商店</span>
+                <span class="acc-tag purple">In the Park 在公园</span>
+                <span class="acc-tag purple">On the Farm 在农场</span>
+                <span class="acc-tag purple">In the City 在城市</span>
+              </div>
+            </div>
+
+            <div class="accordion english-acc">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">5</span>
+                <span>Orange 橙色 · 第5级</span>
+              </div>
+              <div class="accordion-body">
+                <div class="pinyin-group"><strong>故事理解：</strong></div>
+                <span class="acc-tag purple">Fairy Tales 童话</span>
+                <span class="acc-tag purple">Adventure 冒险</span>
+                <span class="acc-tag purple">Making Friends 交朋友</span>
+                <span class="acc-tag purple">Helping Others 帮助他人</span>
+                <span class="acc-tag purple">My Day 我的一天</span>
+                <span class="acc-tag purple">Seasons 季节</span>
+              </div>
+            </div>
+
+            <div class="accordion english-acc">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">6</span>
+                <span>Bronze 铜色 · 第6级</span>
+              </div>
+              <div class="accordion-body">
+                <div class="pinyin-group"><strong>主题讨论：</strong></div>
+                <span class="acc-tag purple">Hobbies 爱好</span>
+                <span class="acc-tag purple">Dreams 梦想</span>
+                <span class="acc-tag purple">Travel 旅行</span>
+                <span class="acc-tag purple">Science Fun 科学乐趣</span>
+                <span class="acc-tag purple">Art and Craft 艺术手工</span>
+                <span class="acc-tag purple">Cooking 烹饪</span>
+              </div>
+            </div>
+
+            <div class="accordion english-acc">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">7</span>
+                <span>Silver 银色 · 第7级</span>
+              </div>
+              <div class="accordion-body">
+                <div class="pinyin-group"><strong>进阶表达：</strong></div>
+                <span class="acc-tag purple">Storytelling 讲故事</span>
+                <span class="acc-tag purple">Giving Opinions 表达观点</span>
+                <span class="acc-tag purple">Solving Problems 解决问题</span>
+                <span class="acc-tag purple">Teamwork 团队合作</span>
+                <span class="acc-tag purple">Cultures 文化</span>
+              </div>
+            </div>
+
+            <div class="accordion english-acc">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">8</span>
+                <span>Gold 金色 · 第8级</span>
+              </div>
+              <div class="accordion-body">
+                <div class="pinyin-group"><strong>综合运用：</strong></div>
+                <span class="acc-tag purple">Presentations 演讲</span>
+                <span class="acc-tag purple">Debates 辩论</span>
+                <span class="acc-tag purple">Creative Writing 创意写作</span>
+                <span class="acc-tag purple">Projects 项目</span>
+                <span class="acc-tag purple">Review 复习</span>
+              </div>
+            </div>
+
+            <!-- 模块B：RAZ AA级 -->
+            <div class="textbook-title" style="margin-top:14px;">📖 RAZ 分级阅读 · AA级（99本）</div>
+
+            <div class="accordion english-acc">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">1</span>
+                <span>颜色与形状 Colors & Shapes</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag purple">Big 大的</span>
+                <span class="acc-tag purple">Blue 蓝色</span>
+                <span class="acc-tag purple">Red 红色</span>
+                <span class="acc-tag purple">Green 绿色</span>
+                <span class="acc-tag purple">Yellow 黄色</span>
+                <span class="acc-tag purple">Purple 紫色</span>
+                <span class="acc-tag purple">Orange 橙色</span>
+                <span class="acc-tag purple">White 白色</span>
+                <span class="acc-tag purple">Black 黑色</span>
+                <span class="acc-tag purple">The Colorful Egg 彩色的蛋</span>
+                <span class="acc-tag purple">Colorful Eggs 彩色蛋</span>
+              </div>
+            </div>
+
+            <div class="accordion english-acc">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">2</span>
+                <span>数字与计数 Numbers & Counting</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag purple">One 一</span>
+                <span class="acc-tag purple">Two 二</span>
+                <span class="acc-tag purple">Three 三</span>
+                <span class="acc-tag purple">Four 四</span>
+                <span class="acc-tag purple">Five 五</span>
+                <span class="acc-tag purple">Six 六</span>
+                <span class="acc-tag purple">Seven 七</span>
+                <span class="acc-tag purple">Eight 八</span>
+                <span class="acc-tag purple">Nine 九</span>
+                <span class="acc-tag purple">Ten 十</span>
+                <span class="acc-tag purple">Eleven 十一</span>
+                <span class="acc-tag purple">Twelve 十二</span>
+                <span class="acc-tag purple">Counting Bugs 数虫子</span>
+                <span class="acc-tag purple">Counting Letters 数字母</span>
+                <span class="acc-tag purple">How Many? 多少个？</span>
+              </div>
+            </div>
+
+            <div class="accordion english-acc">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">3</span>
+                <span>动物 Animals</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag purple">The Zoo 动物园</span>
+                <span class="acc-tag purple">Farm Animals 农场动物</span>
+                <span class="acc-tag purple">Pets 宠物</span>
+                <span class="acc-tag purple">The Bird 鸟</span>
+                <span class="acc-tag purple">The Chicken 鸡</span>
+                <span class="acc-tag purple">The Cow 牛</span>
+                <span class="acc-tag purple">The Horse 马</span>
+                <span class="acc-tag purple">The Dog 狗</span>
+                <span class="acc-tag purple">Go, Go, Go 走走走</span>
+                <span class="acc-tag purple">Jump Over 跳过去</span>
+                <span class="acc-tag purple">The Ocean 海洋</span>
+                <span class="acc-tag purple">Under 在下面</span>
+                <span class="acc-tag purple">In the Water 在水里</span>
+                <span class="acc-tag purple">Water 水</span>
+                <span class="acc-tag purple">Pond Animals 池塘动物</span>
+              </div>
+            </div>
+
+            <div class="accordion english-acc">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">4</span>
+                <span>身体与感官 Body & Senses</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag purple">My Body 我的身体</span>
+                <span class="acc-tag purple">My Face 我的脸</span>
+                <span class="acc-tag purple">My Hair 我的头发</span>
+                <span class="acc-tag purple">My Hands 我的手</span>
+                <span class="acc-tag purple">My Feet 我的脚</span>
+                <span class="acc-tag purple">Eyes 眼睛</span>
+                <span class="acc-tag purple">Ears 耳朵</span>
+                <span class="acc-tag purple">Nose 鼻子</span>
+                <span class="acc-tag purple">Mouth 嘴巴</span>
+                <span class="acc-tag purple">See 看见</span>
+                <span class="acc-tag purple">Hear 听见</span>
+                <span class="acc-tag purple">Smell 闻到</span>
+                <span class="acc-tag purple">Taste 尝到</span>
+                <span class="acc-tag purple">Touch 摸到</span>
+              </div>
+            </div>
+
+            <div class="accordion english-acc">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">5</span>
+                <span>食物 Food</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag purple">Lunch at School 学校午餐</span>
+                <span class="acc-tag purple">My Lunch 我的午餐</span>
+                <span class="acc-tag purple">Breakfast 早餐</span>
+                <span class="acc-tag purple">Fruit 水果</span>
+                <span class="acc-tag purple">Vegetables 蔬菜</span>
+                <span class="acc-tag purple">This Is My Food 这是我的食物</span>
+                <span class="acc-tag purple">Eat Like a Monster 像怪物一样吃</span>
+                <span class="acc-tag purple">The Food We Eat 我们吃的食物</span>
+              </div>
+            </div>
+
+            <div class="accordion english-acc">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">6</span>
+                <span>家庭与学校 Family & School</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag purple">My Family 我的家庭</span>
+                <span class="acc-tag purple">My Dad 我的爸爸</span>
+                <span class="acc-tag purple">My Mom 我的妈妈</span>
+                <span class="acc-tag purple">My Brother 我的哥哥</span>
+                <span class="acc-tag purple">My Sister 我的姐姐</span>
+                <span class="acc-tag purple">Grandma 奶奶</span>
+                <span class="acc-tag purple">Grandpa 爷爷</span>
+                <span class="acc-tag purple">My School 我的学校</span>
+                <span class="acc-tag purple">My Classroom 我的教室</span>
+                <span class="acc-tag purple">My Desk 我的书桌</span>
+                <span class="acc-tag purple">The Book 书</span>
+                <span class="acc-tag purple">School Places 学校场所</span>
+              </div>
+            </div>
+
+            <div class="accordion english-acc">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">7</span>
+                <span>自然与天气 Nature & Weather</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag purple">Spring 春天</span>
+                <span class="acc-tag purple">Summer 夏天</span>
+                <span class="acc-tag purple">Fall 秋天</span>
+                <span class="acc-tag purple">Winter 冬天</span>
+                <span class="acc-tag purple">It Is Fall 秋天到了</span>
+                <span class="acc-tag purple">Weather 天气</span>
+                <span class="acc-tag purple">Rain 雨</span>
+                <span class="acc-tag purple">Snow 雪</span>
+                <span class="acc-tag purple">The Wind 风</span>
+                <span class="acc-tag purple">The Sun 太阳</span>
+                <span class="acc-tag purple">The Moon 月亮</span>
+                <span class="acc-tag purple">Stars 星星</span>
+                <span class="acc-tag purple">The Sky 天空</span>
+                <span class="acc-tag purple">Clouds 云</span>
+                <span class="acc-tag purple">The Forest 森林</span>
+                <span class="acc-tag purple">The Garden 花园</span>
+                <span class="acc-tag purple">The Plant 植物</span>
+              </div>
+            </div>
+
+            <div class="accordion english-acc">
+              <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                <span class="acc-arrow">▶</span>
+                <span class="acc-num">8</span>
+                <span>日常物品 Everyday Objects</span>
+              </div>
+              <div class="accordion-body">
+                <span class="acc-tag purple">The Toy 玩具</span>
+                <span class="acc-tag purple">The Ball 球</span>
+                <span class="acc-tag purple">The Box 盒子</span>
+                <span class="acc-tag purple">The Hat 帽子</span>
+                <span class="acc-tag purple">My Clothes 我的衣服</span>
+                <span class="acc-tag purple">The Shoes 鞋子</span>
+                <span class="acc-tag purple">In My Room 在我的房间</span>
+                <span class="acc-tag purple">My House 我的家</span>
+                <span class="acc-tag purple">The Kitchen 厨房</span>
+                <span class="acc-tag purple">The Bathroom 浴室</span>
+                <span class="acc-tag purple">The Bedroom 卧室</span>
+                <span class="acc-tag purple">The Chair 椅子</span>
+                <span class="acc-tag purple">The Table 桌子</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="fab-big">+</div>
+          <div style="height: 60px;"></div>
+        </div>
+
+        <!-- ====== 视图9：健身饮食每日任务 ====== -->
+        <div class="view" id="view-health">
+          <div class="back-row" data-back>‹ 返回工作台</div>
+          <div class="subject-hero">
+            <div class="icon-big" style="background:#fff4e6;">🏃</div>
+            <div class="meta">
+              <h3>健身饮食</h3>
+              <div class="sub">每天坚持锻炼 · 每日任务 0/1</div>
+              <div class="progress"><div class="bar" style="width:0%;background:linear-gradient(90deg,#ff9f43,#ff6b35);"></div></div>
+            </div>
+          </div>
+
+          <div class="tasks-head">
+            <span>每日任务</span>
+            <span class="pill">0/1</span>
+          </div>
+
+          <div class="task">
+            <div class="checkbox"></div>
+            <div class="body">
+              <h4>跳绳 100 个</h4>
+              <div class="meta"><span class="flame">🔥</span><span>连续 0 天</span><span style="color:#ffb300;font-weight:700;">☀️ +30</span></div>
+            </div>
+            <span class="close">×</span>
+          </div>
+
+          <div class="fab-big">+</div>
+          <div style="height: 60px;"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 悬浮加号 -->
+    <div class="fab" id="fab">+</div>
+  </div>
+
+<script>
+  // ========== 日历渲染 ==========
+  function renderCalendar(year, month) {
+    const daysEl = document.getElementById('calDays');
+    const monthEl = document.getElementById('calMonth');
+    const calDateEl = document.getElementById('calDate');
+    monthEl.textContent = `${year}年 ${month}月`;
+    calDateEl.textContent = `${year}年${month}月`;
+    const firstDay = new Date(year, month - 1, 1).getDay();
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const today = new Date();
+    let html = '';
+    for (let i = 0; i < firstDay; i++) {
+      html += '<div class="day empty"></div>';
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      let cls = 'day';
+      if (today.getFullYear() === year && today.getMonth() + 1 === month && today.getDate() === d) {
+        cls += ' today';
+      }
+      html += `<div class="${cls}">${d}</div>`;
+    }
+    daysEl.innerHTML = html;
+  }
+
+  let calYear = 2026, calMonth = 7;
+  renderCalendar(calYear, calMonth);
+
+  document.getElementById('calPrev').addEventListener('click', () => {
+    calMonth--;
+    if (calMonth < 1) { calMonth = 12; calYear--; }
+    renderCalendar(calYear, calMonth);
+  });
+  document.getElementById('calNext').addEventListener('click', () => {
+    calMonth++;
+    if (calMonth > 12) { calMonth = 1; calYear++; }
+    renderCalendar(calYear, calMonth);
+  });
+
+  // 打卡按钮
+  document.getElementById('checkinBtn').addEventListener('click', function() {
+    if (this.classList.contains('done-btn')) return;
+    this.classList.add('done-btn');
+    this.textContent = '✅ 已打卡';
+  });
+
+  // ========== 视图切换 ==========
+  function showView(id) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.getElementById('scrollArea').scrollTop = 0;
+    const showFab = (id === 'view-home');
+    document.getElementById('fab').style.display = showFab ? 'flex' : 'none';
+  }
+
+  function setNavActive(nav) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelector(`.nav-item[data-nav="${nav}"]`).classList.add('active');
+  }
+
+  // 左侧导航栏点击
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const nav = item.dataset.nav;
+      setNavActive(nav);
+      if (nav === 'home') showView('view-home');
+      else if (nav === 'calendar') showView('view-calendar');
+      else if (nav === 'reward') showView('view-reward');
+      else if (nav === 'pvz') showView('view-pvz');
+      else if (nav === 'wrong') showView('view-wrong');
+      else if (nav === 'health') showView('view-health');
+    });
+  });
+
+  // 主页学科卡片点击
+  document.querySelectorAll('.subject-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const target = card.dataset.target;
+      if (target === 'chinese') showView('view-chinese');
+      else if (target === 'math') showView('view-math');
+      else if (target === 'english') showView('view-english');
+      else if (target === 'health') showView('view-health');
+    });
+  });
+
+  // 返回按钮
+  document.querySelectorAll('[data-back]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      showView('view-home');
+      setNavActive('home');
+    });
+  });
+
+  // 错题本筛选
+  document.querySelectorAll('.wrong-filter .fbtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.wrong-filter .fbtn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  // 任务打卡切换（联动PVZ阳光系统）
+  const TASK_SUN_MAP = {
+    '新古诗5遍，复习一篇': 30,
+    '四五快读': 25,
+    '控笔训练 + 写字': 25,
+    '拼音拼读及练习题': 30,
+    '5 分钟计时不计量（20 以内）': 30,
+    '数感星球': 25,
+    '思维练习题': 25,
+    'Wow English': 30,
+    'RAZ 分级每天 2 本': 35,
+    '跳绳 100 个': 30
+  };
+
+  function getTaskSun(taskEl) {
+    const title = taskEl.querySelector('h4')?.textContent?.trim() || '';
+    return TASK_SUN_MAP[title] || 5;
+  }
+
+  document.querySelectorAll('.task .checkbox').forEach(box => {
+    box.addEventListener('click', e => {
+      e.stopPropagation();
+      const task = box.closest('.task');
+      const wasDone = task.classList.contains('done');
+      task.classList.toggle('done');
+      const isDone = task.classList.contains('done');
+      const sunVal = getTaskSun(task);
+      if (!wasDone && isDone) {
+        pvzSun += sunVal;
+        showSunEarn('+' + sunVal + ' ☀️');
+      } else if (wasDone && !isDone) {
+        pvzSun = Math.max(0, pvzSun - sunVal);
+      }
+      updatePVZUI();
+    });
+  });
+
+  // ========== PVZ 全局状态 ==========
+  let pvzSun = 0;
+  let shopTargetRow = -1;
+  let shopTargetCol = -1;
+
+  const PLANT_MAP = {
+    'sunflower': { icon: '🌻', name: '向日葵', cost: 5 },
+    'peashooter': { icon: '🟢', name: '豌豆射手', cost: 10 },
+    'pepper': { icon: '🌶️', name: '火爆辣椒', cost: 15 },
+    'mushroom': { icon: '🍄', name: '魅惑菇', cost: 20 },
+    'ice': { icon: '🥶', name: '寒冰射手', cost: 30 }
+  };
+
+  // 花园：3行×7列，col0=基地, col6=僵尸
+  let gardenState = [];
+
+  function initGarden() {
+    gardenState = [];
+    for (let r = 0; r < 3; r++) {
+      gardenState[r] = [];
+      for (let c = 0; c < 7; c++) {
+        if (c === 0) gardenState[r][c] = 'base';
+        else if (c === 6) gardenState[r][c] = 'zombie';
+        else gardenState[r][c] = null;
+      }
+    }
+    renderGarden();
+  }
+
+  function renderGarden() {
+    const grid = document.getElementById('gardenGrid');
+    if (!grid) return;
+    let html = '';
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 7; c++) {
+        const state = gardenState[r][c];
+        if (state === 'base') {
+          html += `<div class="garden-cell planted"><div class="gc-icon">🏠</div><div class="gc-name">基地</div></div>`;
+        } else if (state && state.startsWith('plant-')) {
+          const key = state.replace('plant-', '');
+          const p = PLANT_MAP[key];
+          html += `<div class="garden-cell planted" onclick="removePlant(${r},${c})"><div class="gc-icon">${p.icon}</div><div class="gc-name">${p.name}</div></div>`;
+        } else if (state === 'zombie') {
+          html += `<div class="garden-cell zombie"><div class="gc-icon">🧟</div><div class="gc-name">待命</div></div>`;
+        } else if (state === 'zombie-close') {
+          html += `<div class="garden-cell zombie-close"><div class="gc-icon">🧟</div><div class="gc-name">靠近！</div></div>`;
+        } else if (state === 'destroyed') {
+          html += `<div class="garden-cell destroyed"><div class="gc-icon">💀</div><div class="gc-name">已毁</div></div>`;
+        } else {
+          html += `<div class="garden-cell empty-cell" onclick="openPlantShop(${r},${c})"><div class="gc-plus">+</div></div>`;
+        }
+      }
+    }
+    grid.innerHTML = html;
+  }
+
+  function openPlantShop(r, c) {
+    shopTargetRow = r;
+    shopTargetCol = c;
+    document.getElementById('shopBalance').textContent = pvzSun;
+    const overlay = document.getElementById('shopOverlay');
+    overlay.classList.remove('hidden');
+    overlay.querySelectorAll('.shop-item').forEach(item => {
+      const cost = parseInt(item.dataset.cost);
+      if (cost > pvzSun) {
+        item.classList.add('cant-afford');
+        item.onclick = null;
+      } else {
+        item.classList.remove('cant-afford');
+        item.onclick = () => buyPlant(item.dataset.plant, cost);
+      }
+    });
+  }
+
+  function buyPlant(plantKey, cost) {
+    if (pvzSun < cost) return;
+    pvzSun -= cost;
+    gardenState[shopTargetRow][shopTargetCol] = 'plant-' + plantKey;
+    document.getElementById('shopOverlay').classList.add('hidden');
+    renderGarden();
+    updatePVZUI();
+  }
+
+  function removePlant(r, c) {
+    const state = gardenState[r][c];
+    if (!state || !state.startsWith('plant-')) return;
+    const key = state.replace('plant-', '');
+    const refund = Math.floor(PLANT_MAP[key].cost / 2);
+    if (confirm(`移除${PLANT_MAP[key].name}，返还 ${refund} ☀️？`)) {
+      pvzSun += refund;
+      gardenState[r][c] = null;
+      renderGarden();
+      updatePVZUI();
+    }
+  }
+
+  function updateZombies() {
+    // 统计各学科未完成任务
+    const views = [
+      { id: 'view-chinese', total: 4 },
+      { id: 'view-math', total: 3 },
+      { id: 'view-english', total: 2 },
+      { id: 'view-health', total: 1 }
+    ];
+    let totalPending = 0;
+    views.forEach(v => {
+      const viewEl = document.getElementById(v.id);
+      if (!viewEl) return;
+      const tasks = viewEl.querySelectorAll('.task');
+      let done = 0;
+      tasks.forEach(t => { if (t.classList.contains('done')) done++; });
+      totalPending += (v.total - done);
+    });
+
+    // 僵尸距离 = 未完成任务数（0~9）
+    const zombieDist = Math.min(totalPending, 9);
+
+    // 更新花园僵尸位置
+    for (let r = 0; r < 3; r++) {
+      const rowsZombiePos = Math.min(Math.floor(zombieDist / 3) + (zombieDist % 3 > r ? 1 : 0), 6);
+      // 清除之前的僵尸标记
+      for (let c = 0; c < 7; c++) {
+        if (gardenState[r][c] === 'zombie' || gardenState[r][c] === 'zombie-close' || gardenState[r][c] === 'destroyed') {
+          gardenState[r][c] = null;
+        }
+      }
+      // 根据距离设置僵尸
+      if (rowsZombiePos >= 1) {
+        const zCol = 6 - (rowsZombiePos - 1);
+        if (zCol <= 0) {
+          // 僵尸到达基地，整行被毁
+          for (let c = 0; c < 7; c++) {
+            gardenState[r][c] = 'destroyed';
+          }
+        } else {
+          gardenState[r][6] = 'zombie';
+          if (zCol <= 2) {
+            gardenState[r][zCol] = 'zombie-close';
+          }
+        }
+      } else {
+        gardenState[r][6] = 'zombie';
+      }
+      // 恢复基地
+      if (gardenState[r][0] !== 'destroyed') {
+        gardenState[r][0] = 'base';
+      }
+    }
+
+    renderGarden();
+    updatePVZUI();
+
+    // 更新状态文字
+    const statusEl = document.getElementById('gardenStatus');
+    if (zombieDist === 0) statusEl.textContent = '🌿 一切安全';
+    else if (zombieDist <= 3) statusEl.textContent = '⚠️ 僵尸正在靠近！';
+    else if (zombieDist <= 6) statusEl.textContent = '🚨 僵尸逼近花圃！';
+    else statusEl.textContent = '💀 花园危急！';
+  }
+
+  function updateTaskStatus() {
+    const subjects = [
+      { id: 'tsChinese', vid: 'view-chinese', total: 4 },
+      { id: 'tsMath', vid: 'view-math', total: 3 },
+      { id: 'tsEnglish', vid: 'view-english', total: 2 },
+      { id: 'tsHealth', vid: 'view-health', total: 1 }
+    ];
+    let allDone = true;
+    let totalPending = 0;
+    subjects.forEach(s => {
+      const viewEl = document.getElementById(s.vid);
+      const tsEl = document.getElementById(s.id);
+      if (!viewEl || !tsEl) return;
+      const tasks = viewEl.querySelectorAll('.task');
+      let done = 0;
+      tasks.forEach(t => { if (t.classList.contains('done')) done++; });
+      totalPending += (s.total - done);
+      if (done < s.total) allDone = false;
+      tsEl.textContent = done + '/' + s.total + (done === s.total ? ' ✅' : ' 未完成');
+      tsEl.className = 'ts-progress ' + (done === s.total ? 'done' : 'pending');
+    });
+
+    const warnEl = document.getElementById('tsWarning');
+    if (allDone) {
+      warnEl.textContent = '✅ 全部任务已完成，花园安全！';
+      warnEl.className = 'ts-zombie-warning safe';
+    } else {
+      warnEl.textContent = '⚠️ 还有 ' + totalPending + ' 个任务未完成，僵尸正在靠近！';
+      warnEl.className = 'ts-zombie-warning';
+    }
+  }
+
+  function updatePVZUI() {
+    document.getElementById('pvzSunCount').textContent = pvzSun;
+    const dist = getZombieDist();
+    document.getElementById('pvzZombieDist').textContent = dist;
+    document.getElementById('pvzZombieLabel').textContent = dist === 0 ? '花园安全' : '僵尸距离';
+    updateTaskStatus();
+  }
+
+  function getZombieDist() {
+    const views = [
+      { id: 'view-chinese', total: 4 },
+      { id: 'view-math', total: 3 },
+      { id: 'view-english', total: 2 },
+      { id: 'view-health', total: 1 }
+    ];
+    let pending = 0;
+    views.forEach(v => {
+      const viewEl = document.getElementById(v.id);
+      if (!viewEl) return;
+      const tasks = viewEl.querySelectorAll('.task');
+      let done = 0;
+      tasks.forEach(t => { if (t.classList.contains('done')) done++; });
+      pending += (v.total - done);
+    });
+    return Math.min(pending, 9);
+  }
+
+  function resetGarden() {
+    if (confirm('确定重置花园？所有植物将被清除！')) {
+      pvzSun = 0;
+      initGarden();
+      updatePVZUI();
+      // 重置所有打卡任务
+      document.querySelectorAll('.task.done').forEach(t => t.classList.remove('done'));
+    }
+  }
+
+  // 阳光赚取动画
+  function showSunEarn(text) {
+    const el = document.createElement('div');
+    el.textContent = text;
+    el.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:36px;font-weight:800;color:#ffb300;z-index:200;pointer-events:none;animation:sunFloat 1.5s ease-out forwards;';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1500);
+  }
+
+  // 页面切换时更新PVZ
+  const origShowView = showView;
+  showView = function(id) {
+    origShowView(id);
+    if (id === 'view-pvz') {
+      updateZombies();
+      updatePVZUI();
+    }
+  };
+
+  // 初始化
+  initGarden();
+  updatePVZUI();
+
+  // 关闭商店弹窗（点击遮罩）
+  document.getElementById('shopOverlay').addEventListener('click', function(e) {
+    if (e.target === this) this.classList.add('hidden');
+  });
+
+  // 设置全局引用
+  window.showView = showView;
+  window.setNavActive = setNavActive;
+  window.resetGarden = resetGarden;
+
+  // 时间
+  function tickTime() {
+    const d = new Date();
+    document.getElementById('statusTime').textContent =
+      `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  }
+  tickTime();
+  setInterval(tickTime, 30000);
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then(() => {
+      console.log('SW registered');
+    });
+  });
+}
+</script>
+</body>
+</html>
